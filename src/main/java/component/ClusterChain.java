@@ -25,7 +25,8 @@ public class ClusterChain {
         this.clusterSize = clusterSize;
     }
 
-    public void addData(byte[] data) {
+    public int addData(byte[] data) {
+        int startCluster;
         byte[][] sectorBytes = cutArray(data);
         List<Sector> sectors = Arrays
                 .stream(sectorBytes)
@@ -38,8 +39,10 @@ public class ClusterChain {
         if(sectors.size() <= clusterSize) {
             Cluster cluster = new Cluster(clusterSize, sectorSize);
             cluster.setSectors(sectors);
-            clusters.set(allocationTable.getFirstFreeCluster(), cluster);
+            startCluster = allocationTable.getFirstFreeCluster();
+            clusters.set(startCluster, cluster);
         } else {
+            startCluster = allocationTable.getFirstFreeCluster();
             List<Cluster> chain = new LinkedList<>();
             int offset = 0;
             while (offset + clusterSize <= sectors.size()) {
@@ -58,6 +61,11 @@ public class ClusterChain {
             }
         }
         allocationTable.setNext(allocationTable.getFirstFreeCluster(), 0x0FFFFFFF);
+        return startCluster;
+    }
+
+    public void clear(int cluster) {
+        allocationTable.setNext(cluster, 0);
     }
 
     private byte[][] cutArray(byte[] data) {

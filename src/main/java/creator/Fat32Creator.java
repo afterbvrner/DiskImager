@@ -3,6 +3,7 @@ package creator;
 import component.BootSector;
 import component.ClusterChain;
 import component.PrimitiveComponent;
+import component.Root;
 import lombok.Builder;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -10,12 +11,18 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.IntStream;
 
 public class Fat32Creator extends PrimitiveComponent {
     private final BootSector bootSector;
+    private Root root;
     private final ClusterChain clusterChain;
-
     private final Logger log = Logger.getLogger(Fat32Creator.class);
+    private boolean isReady = false;
+    int size;
+    int sectorSize;
+    int clusterSize;
 
     @Builder
     public Fat32Creator(int size, int sectorSize, int clusterSize) {
@@ -26,10 +33,26 @@ public class Fat32Creator extends PrimitiveComponent {
                 .clusterSize(clusterSize)
                 .build();
         bootSector = new BootSector();
+        this.size = size;
+        this.sectorSize = sectorSize;
+        this.clusterSize = clusterSize;
     }
 
-    public void addData(byte[] data) {
-        clusterChain.addData(data);
+    public void addFiles(List<File> files) throws IOException {
+        root = new Root(files);
+        long rootClusterAmount = root.fullSize() / (sectorSize * clusterSize) + 1;
+        byte[] rootBytes = root.toBytes();
+        clusterChain.addData(rootBytes);
+        for (int i = 0; i < files.size(); i++) {
+            root.setCluster(i,
+                    clusterChain.addData(
+                            FileUtils.readFileToByteArray(files.get(i))
+                    ));
+        }
+        IntStream
+                .range(0, (int) rootClusterAmount)
+                .forEach(clusterChain::clear);
+        clusterChain.addData(root.toBytes());
     }
 
     public void assembly(String filename) throws IOException {
