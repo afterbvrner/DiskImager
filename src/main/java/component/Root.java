@@ -11,6 +11,7 @@ public class Root {
     private final List<Entry> entries;
 
     public Root(List<File> files) {
+        // TODO: Вот тут нужно, чтоб превращалось в массив энтрей для длинных имен, а не в одну энтрю
         entries = files.stream()
                 .map(Entry::new)
                 .collect(Collectors.toList());

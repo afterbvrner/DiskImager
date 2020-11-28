@@ -38,6 +38,7 @@ public class Fat32Creator extends PrimitiveComponent {
         this.clusterSize = clusterSize;
     }
 
+    // TODO: Двойная запись директории
     public void addFiles(List<File> files) throws IOException {
         root = new Root(files);
         long rootClusterAmount = root.fullSize() / (sectorSize * clusterSize) + 1;
@@ -58,6 +59,7 @@ public class Fat32Creator extends PrimitiveComponent {
     public void assembly(String filename) throws IOException {
         byte[] boot = bootSector.getBuffer().array();
         log.info("Boot sector created");
+        // TODO: Пустые сектора
         byte[] allocation = clusterChain.getAllocationTable().toBytes();
         log.info("Allocation table loaded");
         log.info("Converting cluster chain...");
